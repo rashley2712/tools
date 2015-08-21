@@ -115,7 +115,7 @@ if __name__ == "__main__":
 		ppgplot.pggray(redData, 0, width-1, 0, height-1, 0, 255, pgPlotTransform)
 		
 		# correlation = scipy.signal.correlate2d(redData, redReference, mode='same', boundary='symm')
-		shift = phase_cor( redData, redReference)
+		shift = phase_cor(redData, redReference)
 		y, x = numpy.unravel_index(numpy.argmax(shift), shift.shape)
 		if x > width/2:
 			xd = width - x
@@ -126,10 +126,9 @@ if __name__ == "__main__":
 		else: 
 			yd = -y
 			
-		print x, y, xd, yd
+		print "Offset from first frame:", x, y, xd, yd
 		
-		shiftedImage = ndimage.interpolation.shift(redData, (yd, xd), order = 3 )
-		redTotal+= shiftedImage
+		redTotal+= ndimage.interpolation.shift(redData, (yd, xd), order = 3 )
 		greenTotal+= ndimage.interpolation.shift(greenData, (yd, xd), order = 3 )
 		blueTotal+= ndimage.interpolation.shift(blueData, (yd, xd), order = 3 )
 		redMax = numpy.max(redTotal)
@@ -139,7 +138,7 @@ if __name__ == "__main__":
 		blueScaled = blueTotal / (frameIndex + 1)
 		
 		ppgplot.pgslct(outputWindow)
-		ppgplot.pggray(redScaled, 0, width-1, 0, height-1, 255, 0, pgPlotTransform)
+		ppgplot.pggray(redTotal, 0, width-1, 0, height-1, 255, 0, pgPlotTransform)
 		
 		redImage = Image.fromarray(redScaled)
 		greenImage = Image.fromarray(greenScaled)
