@@ -38,6 +38,7 @@ class MyHTMLParser(HTMLParser):
 		if "tr" in tag: 
 			# print "Found end <tr> tag"
 			self.gettingRecord = False
+			gaiaAlerts.append(self.dataRecord)
 			# print "Data record", self.dataRecord
 		
         
@@ -79,8 +80,13 @@ if __name__ == "__main__":
 	pageData = response.read()
 	print "Fetched the data ok"
 	
+	gaiaAlerts = []
 	HTMLparser = MyHTMLParser()
 	HTMLparser.feed(pageData)
+	
+	for g in gaiaAlerts:
+		print g
+	print "Found %d Gaia alert records."%len(gaiaAlerts)
 
 	response.close()
 	
