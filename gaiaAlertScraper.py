@@ -4,6 +4,7 @@ import argparse
 from HTMLParser import HTMLParser
 import urllib2
 import sys
+import json
 
 
 # create a subclass and override the handler methods
@@ -35,11 +36,11 @@ class MyHTMLParser(HTMLParser):
 		if "td" in tag: 
 			# print "Found end <td> tag"
 			self.parseData = False
-		if "tr" in tag: 
+		if "tr" in tag and self.gettingRecord: 
 			# print "Found end <tr> tag"
 			self.gettingRecord = False
 			gaiaAlerts.append(self.dataRecord)
-			# print "Data record", self.dataRecord
+			# print "Added.... Data record", self.dataRecord
 		
         
 	def handle_data(self, data):
@@ -49,9 +50,6 @@ class MyHTMLParser(HTMLParser):
 				# print "%s data: %s"%(self.fieldName, data)
 				self.dataRecord[self.fieldName] = data
 				
-				
-				
-
 if __name__ == "__main__":
 	
 	parser = argparse.ArgumentParser(description='Opens up a URL and looks for GAIA alerts. Adds it to a local database.')
@@ -60,7 +58,7 @@ if __name__ == "__main__":
 	args = parser.parse_args()
 	if args.url==None:
 		fullURL = "http://gaia.ac.uk/selected-gaia-science-alerts"
-		fullURL = "http://localhost/gaia_test.html"
+		# fullURL = "http://localhost/gaia_test.html"
 	else:
 		fullURL = args.url
 	
@@ -89,4 +87,10 @@ if __name__ == "__main__":
 	print "Found %d Gaia alert records."%len(gaiaAlerts)
 
 	response.close()
+	
+	jsonFile = open("gaiaAlerts.json", "w")
+	json.dump(gaiaAlerts, jsonFile)
+	jsonFile.close()
+	 
+	
 	
