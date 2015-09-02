@@ -25,16 +25,18 @@ class MyHTMLParser(HTMLParser):
 						if "views-field-field" in c:
 							fieldName = c
 					fieldName = fieldName[len("views-field-field-"):]
-					# print "Found alert data [%s]"%fieldName
+					print "Found alert data [%s]"%fieldName
 					self.parseData = True
 					self.fieldName = fieldName
 				if "views-field-field-alert-name" in attribute[1]:
 					self.gettingRecord = True
 					self.dataRecord = {}
-
+		
 	def handle_endtag(self, tag):
 		if "td" in tag: 
 			# print "Found end <td> tag"
+			self.parseData = False
+		if "span" in tag:
 			self.parseData = False
 		if "tr" in tag and self.gettingRecord: 
 			# print "Found end <tr> tag"
@@ -47,7 +49,7 @@ class MyHTMLParser(HTMLParser):
 		if self.parseData:
 			if self.gettingRecord:
 				data = data.strip()
-				# print "%s data: %s"%(self.fieldName, data)
+				print "%s data: %s"%(self.fieldName, data)
 				self.dataRecord[self.fieldName] = data
 				
 if __name__ == "__main__":
