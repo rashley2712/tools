@@ -11,7 +11,7 @@ def createMovie(path):
 	if path==None: path = ""
 	print "Creating the movie"
 	movieFilename = "auto_test.mp4"
-	subprocess.call(["mencoder", "mf://*.jpg", "-o", movieFilename, "-fps", "2", "-ovc", "lavc"])
+	subprocess.call(["mencoder", "mf://*.jpg", "-o", movieFilename, "-fps", "8", "-ovc", "lavc"])
 
 if __name__ == "__main__":
 	
@@ -65,6 +65,15 @@ if __name__ == "__main__":
 
 	response.close()
 	
+	"""Some ideas for video encoding... x=1; for i in *jpg; do counter=$(printf %03d $x); ln "$i" /tmp/img"$counter".jpg; x=$(($x+1)); done
+	ffmpeg -f image2 -i /tmp/img%03d.jpg /tmp/a.mpg
+	
+	or
+	
+	ffmpeg -r 1 -pattern_type glob -i 'test_*.jpg' -c:v libx264 out.mp4
+	
+	ffmpeg -f image2 -framerate 10 -pattern_type glob -i '*.jpg' -r 10 a.avi
+	"""
  
 	
 	
