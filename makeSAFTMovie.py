@@ -14,7 +14,11 @@ if __name__ == "__main__":
 	parser.add_argument('--archive', action="store_true", help="Archive the used jpg files to a tarball.")
 	args = parser.parse_args()
 	
-	defaultDirectory = "/Users/rashley/astro/saftimages/fusion"
+	defaultDirectory = "."
+
+	today = datetime.date.today()
+
+	todayString = str(today).replace("-","")
 	
 	try:
 		fileList = os.listdir(defaultDirectory)
@@ -25,7 +29,11 @@ if __name__ == "__main__":
 	date_re = re.compile(r'20[0-9]{2}([0-9]{2}){2}')
 	
 	uniqueDates = []
+	jpgFileList = []
 	for filename in fileList:
+		if ".jpg" in filename: jpgFileList.append(filename)
+
+	for filename in jpgFileList:
 		d = date_re.search(filename)
 		if (d):
 			date = d.group(0)
@@ -73,13 +81,19 @@ if __name__ == "__main__":
 			tarCommand.append('-T')
 			tarCommand.append('%s.list'%f['date'])
 			subprocess.call(tarCommand)
+			if todayString in f['date']:
+				print "Not removing today''s images: %s."%todayString
+				continue
+
+
 			for filename in f['files']:
 				os.remove(filename)
 				print "Removing", filename
 				
-			listFiles = os.listdir(defaultDirectory)
-			for l in listFiles:
-				if '.list' in l: os.remove(l)
+		listFiles = os.listdir(defaultDirectory)
+		for l in listFiles:
+			if '.list' in l:
+				os.remove(l)
 			
 	sys.exit()
 	
