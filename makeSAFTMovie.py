@@ -6,15 +6,18 @@ import urllib2
 import sys, subprocess, os
 import json, re
 import datetime
+import shutil
 
 if __name__ == "__main__":
 	
 	parser = argparse.ArgumentParser(description='Looks for the latest images from the SAFT webcam and makes a movie using "ffmpeg".')
 	parser.add_argument('--default', action="store_true", help='Write the input parameters to the config file as default values.')
 	parser.add_argument('--archive', action="store_true", help="Archive the used jpg files to a tarball.")
+	parser.add_argument('--publish', action="store_true", help="Publish the new videos to the web page.")
 	args = parser.parse_args()
 	
 	defaultDirectory = "."
+	webDirectory = "/data/rashley/www/saftvideo"
 
 	today = datetime.date.today()
 
@@ -82,7 +85,7 @@ if __name__ == "__main__":
 			tarCommand.append('%s.list'%f['date'])
 			subprocess.call(tarCommand)
 			if todayString in f['date']:
-				print "Not removing today''s images: %s."%todayString
+				print "Not removing today's images: %s."%todayString
 				continue
 
 
@@ -94,6 +97,24 @@ if __name__ == "__main__":
 		for l in listFiles:
 			if '.list' in l:
 				os.remove(l)
+				
+		for l in listFiles:
+			if '.tar' in l:
+				fromName = defaultDirectory + "/" + l
+				toName = defaultDirectory + "/tar/" + l
+				print fromName, " --> ", toName
+				shutil.move(fromName, toName)
+			
+	if args.publish:
+		print "Publishing:"
+		allFiles = os.listdir(defaultDirectory)
+		for f in allFiles:
+			if ".mp4" in f: 
+				print "Publishing: ", f
+				fromName = defaultDirectory + "/" + f
+				toName = webDirectory + "/" + f
+				print fromName, " --> ", toName
+				shutil.move(fromName, toName)
 			
 	sys.exit()
 	
