@@ -9,17 +9,22 @@ import configHelper
 if __name__ == "__main__":
 	
 	parser = argparse.ArgumentParser(description='Looks into the web directory of the SAFT movies and creates an updated JSON file for the web client to read.')
-	parser.add_argument('--default', action="store_true", help='Write the input parameters to the config file as default values.')
+	parser.add_argument('--save', action="store_true", help='Write the input parameters to the config file as default values.')
 	parser.add_argument('--archive', action="store_true", help="Archive the used jpg files to a tarball.")
 	parser.add_argument('--publish', action="store_true", help="Publish the new videos to the web directory.")
+	parser.add_argument('--web', type=str, help="Specify the location of the web publishing directory.")
 	args = parser.parse_args()
 	
-	webDirectory = "/data/rashley/www/saftvideo"
-	
 	configObject = configHelper.configClass("saftmovie")
-	configObject.getProperty("webDirectory")
-	configObject.setProperty("webDirectory", "/data/rashley/www/saftvideo")
-	configObject.save()
+	if args.web!=None:
+		configObject.webDirectory = args.web
+	webDirectory = configObject.getProperty("webDirectory")
+	if webDirectory == None:
+		print "ERROR: Please specify the directory of the web pages using the --web parameter"
+		sys.exit()
+		
+	if args.save:
+		configObject.save()
 	
 	today = datetime.date.today()
 

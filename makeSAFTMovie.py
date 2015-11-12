@@ -7,26 +7,46 @@ import sys, subprocess, os
 import json, re
 import datetime
 import shutil
+import configHelper
 
 if __name__ == "__main__":
 	
 	parser = argparse.ArgumentParser(description='Looks for the latest images from the SAFT webcam and makes a movie using "ffmpeg".')
-	parser.add_argument('--default', action="store_true", help='Write the input parameters to the config file as default values.')
+	parser.add_argument('--save', action="store_true", help='Write the input parameters to the config file as default values.')
 	parser.add_argument('--archive', action="store_true", help="Archive the used jpg files to a tarball.")
-	parser.add_argument('--publish', action="store_true", help="Publish the new videos to the web page.")
+	parser.add_argument('--publish', action="store_true", help="Publish the new videos to the web folder.")
+	parser.add_argument('--web', type=str, help="Specify the location of the web publishing directory.")
+	parser.add_argument('--image', type=str, help="Specify the location of the raw jpg images.")
 	args = parser.parse_args()
 	
-	defaultDirectory = "."
-	webDirectory = "/data/rashley/www/saftvideo"
+	configObject = configHelper.configClass("saftmovie")
+	
+	if args.image!=None:
+		configObject.imageDirectory = args.image
+	imageDirectory = configObject.getProperty("imageDirectory")
+	if imageDirectory == None:
+		print "ERROR: Please specify the directory where the raw images are using the --image parameter"
+		sys.exit()
+	
+	
+	if args.web!=None:
+		configObject.webDirectory = args.web
+	webDirectory = configObject.getProperty("webDirectory")
+	if webDirectory == None:
+		print "ERROR: Please specify the directory of the web pages using the --web parameter"
+		sys.exit()
+		
+	if args.save:
+		configObject.save()
 
 	today = datetime.date.today()
 
 	todayString = str(today).replace("-","")
 	
 	try:
-		fileList = os.listdir(defaultDirectory)
+		fileList = os.listdir(imageDirectory)
 	except:
-		print "Could not find the directory %s. Exiting."%defaultDirectory
+		print "Could not find the directory %s. Exiting."%imageDirectory
 		sys.exit(-1)
 	
 	date_re = re.compile(r'20[0-9]{2}([0-9]{2}){2}')
@@ -65,12 +85,12 @@ if __name__ == "__main__":
 		filelistName = "%s.list"%f['date']
 		listFile = open(filelistName, 'wt')
 		for n in f['files']:
-			listFile.write(n + '\n')
+			listFile.write(imageDirectory + "/" + n + '\n')
 		listFile.close() 
 		
 	for f in filesByDate:
-		print "Making movie for %s."%f['date'], defaultDirectory
-		ffmpegCommand = ["pipeFFMPEG.bash"]
+		print "Making movie for %s."%f['date'], imageDirectory
+		ffmpegCommand = ["/home/rashley/code/tools/pipeFFMPEG.bash"]
 		ffmpegCommand.append(f['date'])
 		print "Running:", ffmpegCommand
 		subprocess.call(ffmpegCommand)
@@ -79,39 +99,40 @@ if __name__ == "__main__":
 		for f in filesByDate:
 			print "Archiving files for %s."%(f['date']) 
 			tarCommand = ['tar']
-			tarCommand.append('-cvf')
+			tarCommand.append('-cf')
 			tarCommand.append('%s.tar'%f['date'])
 			tarCommand.append('-T')
 			tarCommand.append('%s.list'%f['date'])
+			print "Executing:", tarCommand
 			subprocess.call(tarCommand)
+			
 			if todayString in f['date']:
 				print "Not removing today's images: %s."%todayString
 				continue
 
 
 			for filename in f['files']:
-				os.remove(filename)
-				print "Removing", filename
+				print "Removing:", filename
+				os.remove(imageDirectory + "/" + filename)
 				
-		listFiles = os.listdir(defaultDirectory)
+		listFiles = os.listdir(".")
 		for l in listFiles:
 			if '.list' in l:
 				os.remove(l)
 				
 		for l in listFiles:
 			if '.tar' in l:
-				fromName = defaultDirectory + "/" + l
-				toName = defaultDirectory + "/tar/" + l
+				fromName = l
+				toName = imageDirectory + "/tar/" + l
 				print fromName, " --> ", toName
 				shutil.move(fromName, toName)
 			
 	if args.publish:
 		print "Publishing:"
-		allFiles = os.listdir(defaultDirectory)
+		allFiles = os.listdir(".")
 		for f in allFiles:
 			if ".mp4" in f: 
-				print "Publishing: ", f
-				fromName = defaultDirectory + "/" + f
+				fromName = f
 				toName = webDirectory + "/" + f
 				print fromName, " --> ", toName
 				shutil.move(fromName, toName)

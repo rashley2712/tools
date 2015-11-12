@@ -7,7 +7,7 @@ class configClass:
 		self._appName = name
 		self._filename = getUserHome() +"/.config/" + self._appName + "/" + self._appName + ".conf"
 		self._alreadyExists = False
-		print "DEBUG: config file is at:", self._filename
+		# print "DEBUG: config file is at:", self._filename
 		self.load()
 		
 	def getProperty(self, name):
@@ -15,7 +15,7 @@ class configClass:
 			property = getattr(self, name)
 		except AttributeError:
 			property = None
-		print "Property %s: %s"%(name, str(property))	
+		return property	
 
 	def setProperty(self, key, value):
 		setattr(self, key, value)
@@ -24,10 +24,9 @@ class configClass:
 	def load(self):
 		filename = self._filename
 		if os.path.exists(filename):
-			print "I found myself!"
 			self._alreadyExists = True
 		else:
-			print "I don't exist yet."
+			print "DEBUG: The configfile, %s, does not exist yet."%filename
 			return False
 	
 		inputfile = open(filename, "r")
@@ -59,12 +58,12 @@ class configClass:
 			object[key] = data
 			
 		outputfile = open(filename, 'w')
-		json.dump(object, outputfile)
+		json.dump(object, outputfile, indent = 4)
 		outputfile.close()	
 
 def getUserHome():
 	homeDir = os.path.expanduser('~')
-	print "DEBUG: The user's home directory is %s."%homeDir
+	# print "DEBUG: The user's home directory is %s."%homeDir
 	return homeDir
 
 def createConfigFolder(appName):
