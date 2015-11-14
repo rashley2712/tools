@@ -6,6 +6,7 @@ class configClass:
 	def __init__(self, name="unknownapp"):
 		self._appName = name
 		self._filename = getUserHome() +"/.config/" + self._appName + "/" + self._appName + ".conf"
+		createConfigFolder(self._appName)
 		self._alreadyExists = False
 		# print "DEBUG: config file is at:", self._filename
 		self.load()
