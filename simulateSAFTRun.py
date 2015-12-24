@@ -5,7 +5,6 @@ import datetime, time
 import numpy
 import ppgplot
 import generalUtils, configHelper
-import curses
 from astropy.io import fits
 
 if __name__ == "__main__":
@@ -83,43 +82,21 @@ if __name__ == "__main__":
 	boostedImage = generalUtils.percentiles(imageData, 20, 99)
 	ppgplot.pggray(boostedImage, 0, width-1, 0, height-1, 0, 255, imagePlot['pgPlotTransform'])
 	
-	screen = curses.initscr()
-	curses.noecho() 
-	curses.curs_set(0) 
-	screen.keypad(1)
-	screen.addstr("This is a String")
-	screen.addstr("This is a Sample Curses Script\n\n") 
-	
-	while True: 
-	   event = screen.getch() 
-	   if event == ord("q"): break 
-	   elif event == ord("p"): 
-	      screen.clear() 
-	      screen.addstr("The User Pressed Lower Case p") 
-	   elif event == ord("P"): 
-	      screen.clear() 
-	      screen.addstr("The User Pressed Upper Case P") 
-	   elif event == ord("3"): 
-	      screen.clear() 
-	      screen.addstr("The User Pressed 3") 
-	   elif event == ord(" "): 
-	      screen.clear() 
-	      screen.addstr("The User Pressed The Space Bar")
-	
+
 	for index, frameFilename in enumerate(filenames):
 		hdulist = fits.open(frameFilename)
 		imageData =  hdulist[0].data
 		boostedImage = generalUtils.percentiles(imageData, 20, 99)
 		ppgplot.pggray(boostedImage, 0, width-1, 0, height-1, 0, 255, imagePlot['pgPlotTransform'])
-		outputFilename = outputDir + "/run-%04d.fits"%index
+		outputFilename = outputDir + "/WD1145-%05d.fits"%index
 		hdulist.writeto(outputFilename, clobber=True)
 		hdulist.close()
+		sys.stdout.write("\r%d frame of %d written to: %s"%(index, numFrames, outputFilename))
+		sys.stdout.flush()
 		time.sleep(readoutTime + exposureTime)
-		screen.addstr("This is a Sample Curses Script\n\n") 
 		
 	
 	ppgplot.pgclos()
 	
-	curses.endwin()
 	
 	

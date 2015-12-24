@@ -17,6 +17,13 @@ class configClass:
 		except AttributeError:
 			property = None
 		return property	
+		
+	def assertProperty(self, name, value):
+		try: 
+			property = getattr(self, name)
+		except AttributeError:
+			property = value
+		return property
 
 	def setProperty(self, key, value):
 		setattr(self, key, value)
