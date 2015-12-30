@@ -10,6 +10,10 @@ class configClass:
 		self._alreadyExists = False
 		# print "DEBUG: config file is at:", self._filename
 		self.load()
+	
+	def setDefaults(self, defaults):
+		for key in defaults.keys():
+			self.setProperty(key, defaults[key])
 		
 	def getProperty(self, name):
 		try:
@@ -22,7 +26,11 @@ class configClass:
 		try: 
 			property = getattr(self, name)
 		except AttributeError:
+			if value==None:
+				print "WARNING: %s not specified and no default set."%name
+				return
 			property = value
+			self.setProperty(name, value)
 		return property
 
 	def setProperty(self, key, value):

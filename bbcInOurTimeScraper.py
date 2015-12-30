@@ -2,6 +2,7 @@
 
 import argparse
 from HTMLParser import HTMLParser
+from bs4 import BeautifulSoup
 import urllib2
 import sys
 import json
@@ -15,16 +16,12 @@ class MyHTMLParser(HTMLParser):
 	dataRecord = None
 	
 	def handle_starttag(self, tag, attrs):
-		if "td" in tag:
-			# print "Table data tag"
+		if "span" in tag:
+			print "span tag"
 			# print attrs
 			for attribute in attrs:
-				if "views-field-field" in attribute[1]:
-					classes = attribute[1].split(' ')
-					for c in classes:
-						if "views-field-field" in c:
-							fieldName = c
-					fieldName = fieldName[len("views-field-field-"):]
+				print attribute
+				if "name" in attribute[1]:
 					print "Found alert data [%s]"%fieldName
 					self.parseData = True
 					self.fieldName = fieldName
@@ -56,11 +53,13 @@ if __name__ == "__main__":
 	
 	parser = argparse.ArgumentParser(description='Opens up a URL on the BBC site and looks for In Our Time download links')
 	parser.add_argument('--url', type=str, help='URL to scrape. Default is: http://www.bbc.co.uk/programmes/b006qykl/episodes/downloads')
+	parser.add_argument('--outdir', type=str, default = "/Users/rashley/Radio/InOurTime", help='Directory to write the downloaded files. Default is: /Users/rashley/Radio/InOurTime/')
 	
 	args = parser.parse_args()
 	if args.url==None:
 		fullURL = "http://www.bbc.co.uk/programmes/b006qykl/episodes/downloads"
 		fullURL = "http://localhost/bbc_test.html"
+		fullURL = "http://www.bbc.co.uk/programmes/b006qykl/episodes/downloads.rss"
 	else:
 		fullURL = args.url
 	
@@ -80,19 +79,57 @@ if __name__ == "__main__":
 	pageData = response.read()
 	print "Fetched the data ok"
 	
-	gaiaAlerts = []
-	HTMLparser = MyHTMLParser()
-	HTMLparser.feed(pageData)
+	mp3Links = []
+	#HTMLparser = MyHTMLParser()
+	#HTMLparser.feed(pageData)
 	
-	for g in gaiaAlerts:
-		print g
-	print "Found %d Gaia alert records."%len(gaiaAlerts)
-
+	soup = BeautifulSoup(pageData, 'html.parser')
+	
+	titles = []
+	for title in soup.find_all('title'):
+		titles.append(title.get_text())
+	
+	links = []
+	for link in soup.find_all('link'):
+	    links.append(link.get_text())
+		
+	mp3Objects = []
+	for t, l in zip(titles, links):
+		mp3 = {}
+		mp3['title'] = t
+		mp3['url'] = l
+		filename = t.strip()
+		filename = filename.replace(' ', '_')
+		filename = filename.replace('\'', '')
+		filename = "IOT_%s.mp3"%filename
+		mp3['filename'] = filename
+		mp3Objects.append(mp3)
+		
+	filteredList = []
+	for m in mp3Objects:
+		print m
+		if ".mp3" in m['url']:
+			filteredList.append(m)
+	mp3Objects = filteredList
+	
 	response.close()
 	
-	jsonFile = open("gaiaAlerts.json", "w")
-	json.dump(gaiaAlerts, jsonFile)
-	jsonFile.close()
+	for mp3 in mp3Objects:
+	
+		print "Ready to get:", mp3
+		try:
+			response = urllib2.urlopen(mp3['url'])
+			outputFilename = "%s/%s"%(args.outdir, mp3['filename'])
+			outfile = open(outputFilename, 'w')
+			outfile.write(response.read())
+		except  urllib2.HTTPError as e:
+			print "We got an error of:", e.code
+		except urllib2.URLError as e:
+			print e.reason
+		
+	
+	sys.exit()
+	
 	 
 	
 	
