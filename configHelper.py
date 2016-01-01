@@ -13,25 +13,31 @@ class configClass:
 	
 	def setDefaults(self, defaults):
 		for key in defaults.keys():
-			self.setProperty(key, defaults[key])
+			if key not in self.__dict__.keys():
+				self.setProperty(key, defaults[key])
 		
 	def getProperty(self, name):
 		try:
 			property = getattr(self, name)
 		except AttributeError:
 			property = None
+			print "Could not find value for property", name
 		return property	
 		
 	def assertProperty(self, name, value):
-		try: 
-			property = getattr(self, name)
-		except AttributeError:
-			if value==None:
-				print "WARNING: %s not specified and no default set."%name
-				return
-			property = value
+		if value!=None:
 			self.setProperty(name, value)
-		return property
+			print "overriding default", name, value
+			return value
+		try: 
+			value = getattr(self, name)
+			print "Retrieved value:", name, value
+		except AttributeError:
+			print "WARNING: %s not specified and no default set."%name
+			return
+			
+		print name, value
+		return value
 
 	def setProperty(self, key, value):
 		setattr(self, key, value)
@@ -54,6 +60,7 @@ class configClass:
 				value = str(value)
 			if type(value) is list:
 				value = numpy.array(value)
+			print "Loading", key, value
 			setattr(self, key, value)
 		inputfile.close()
 		return True
