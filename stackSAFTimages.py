@@ -5,7 +5,6 @@ import datetime
 import numpy
 import ppgplot
 import generalUtils
-import urwid
 from astropy.io import fits
 
 if __name__ == "__main__":
@@ -14,6 +13,8 @@ if __name__ == "__main__":
 	parser.add_argument('runfile', type=str, help='A text file containing the filenames of all of the images in the run. Ordered correctly.')
 	parser.add_argument('--png', action='store_true', help='Switch to tell the program to output a .png file for each frame in the run.')
 	args = parser.parse_args()
+	
+	imageIndex = 1
 	
 	filenames = []	
 	filename = args.runfile
@@ -36,7 +37,7 @@ if __name__ == "__main__":
 		print card.header.keys()
 		print repr(card.header)
 	
-	imageData =  hdulist[0].data
+	imageData =  hdulist[imageIndex].data
 	hdulist.close()
 	
 	(height, width) = numpy.shape(imageData)
@@ -47,6 +48,7 @@ if __name__ == "__main__":
 	ppgplot.pgpap(8, 1)
 	ppgplot.pgenv(0., width,0., height, 1, -2)
 	imagePlot['pgPlotTransform'] = [0, 1, 0, 0, 0, 1]
+	
 	
 	boostedImage = generalUtils.percentiles(imageData, 20, 99)
 	ppgplot.pggray(boostedImage, 0, width-1, 0, height-1, 0, 255, imagePlot['pgPlotTransform'])
@@ -64,7 +66,7 @@ if __name__ == "__main__":
 		#fill = urwid.Filler(txt, 'top')
 		#loop = urwid.MainLoop(fill)
 		
-		imageData =  hdulist[0].data
+		imageData =  hdulist[imageIndex].data
 		boostedImage = generalUtils.percentiles(imageData, 20, 99)
 		ppgplot.pggray(boostedImage, 0, width-1, 0, height-1, 0, 255, imagePlot['pgPlotTransform'])
 		if args.png: generalUtils.writePNG(boostedImage, frameFilename)
