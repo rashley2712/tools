@@ -15,6 +15,7 @@ if __name__ == "__main__":
 	parser.add_argument('--show', action='store_true', help='Show the images in a window on the desktop.')
 	parser.add_argument('-o','--outputpath', type=str, default="", help='Specify and output directory for the images.')
 	parser.add_argument('-w','--workingdir', type=str, default="/tmp/", help='Working directory for temporary files. Defaults to /tmp')
+	parser.add_argument('-d','--date', type=str, default="yesterday", help='Date for the archive YYYYMMDD. Defaults to "yesterday".')
 	
 	args = parser.parse_args()
 	

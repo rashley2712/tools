@@ -77,44 +77,18 @@ if __name__ == "__main__":
 	subprocess.call(ffmpegCommand)
 	os.rename(os.path.join(archiveFolder, yesterdayString+".mp4"), os.path.join(args.outputpath, yesterdayString + ".mp4"))
 
+	# Now generate an animated gif from the mp4
+	# ffmpeg -i 20200622.mp4 -filter_complex "[0:v] split [a][b];[a] palettegen [p];[b][p] paletteuse" out.gif
+
+	os.chdir(args.outputpath)
+	ffmpegCommand = ['ffmpeg']
+	ffmpegCommand.append('-y')
+	ffmpegCommand.append('-i')
+	ffmpegCommand.append(os.path.join(args.outputpath, yesterdayString + ".mp4"))
+	ffmpegCommand.append('-filter_complex')
+	ffmpegCommand.append('[0:v] split [a][b];[a] palettegen [p];[b][p] paletteuse')
+	ffmpegCommand.append(yesterdayString + '.gif')
+	print(ffmpegCommand)
+	subprocess.call(ffmpegCommand)
 	sys.exit()
 
-	imagesToGet = [ {'url': baseURL + baseImage, 'output': args.workingdir + 'base.png' }, 
-	                {'url': baseURL + tempOverlay, 'output': args.workingdir + 'temp-overlay_%s.png'%timeString },
-					{'url': baseURL + tempMap, 'output': args.workingdir + 'temp-map_%s.png'%timeString } ]
-	
-	
-	for image in imagesToGet:
-		if os.path.exists(image['output']): 
-			print("skipping...%s"%image['url'])
-			continue
-		try:
-			response = urllib.request.urlopen(image['url'])
-		except  urllib.error.HTTPError as e:
-			print("We got an error of:", e.code)
-			sys.exit()
-		except urllib.error.URLError as e:
-			print(e.reason)
-			sys.exit()
-
-		headers = str(response.headers)
-		print(headers)
-		
-		outFile = open(image['output'], 'wb')
-		outFile.write(response.read())
-		outFile.close()
-	print("Fetched the data ok")
-
-	image = imagesToGet[0]
-	baseImage = Image.open(image['output'])
-	if args.show: baseImage.show()
-	print(baseImage.size, baseImage.info)
-	temperatureOverlay = Image.open(imagesToGet[1]['output'])
-	if args.show: temperatureOverlay.show()
-	print(temperatureOverlay.size, temperatureOverlay.info)
-	temperatureImage = Image.open(imagesToGet[2]['output'])
-	if args.show: temperatureImage.show()
-	print(temperatureImage.size, temperatureImage.info)
-	overlayImage = Image.alpha_composite(temperatureImage, temperatureOverlay)
-	if args.show: overlayImage.show(title="overlay")
-	overlayImage.save(os.path.join(args.outputpath, "temp_%s.png"%timeString))
