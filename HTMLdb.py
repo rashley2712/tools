@@ -3,7 +3,7 @@ class HTMLdb:
 	def __init__(self):
 		self.dates = None
 		self.filename = "htmldb.json"
-		self.db = { 'latestImage': "none.png"}
+		self.db = { }
 
 	def load(self):
 		try:

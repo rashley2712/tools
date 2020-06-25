@@ -28,6 +28,9 @@ if __name__ == "__main__":
 	db.dump()
 
 	tempOverlay = "temp-overlay.php?user=%s"%config['user']
+	humidityOverlay = "hum-overlay.php?user=%s"%config['user']
+	cloudOverlay = "cloud-overlay.php?user=%s"%config['user']
+
 	print("Base URL is:", config['baseURL']) 
 
 	now = datetime.datetime.now()
@@ -36,7 +39,12 @@ if __name__ == "__main__":
 
 	imagesToGet = [ {'url': config['baseURL'] + config['baseImage'], 'output': os.path.join(config['tmpPath'], 'base.png') }, 
 	                {'url': config['baseURL'] + tempOverlay, 'output': os.path.join(config['tmpPath'],'temp-overlay_%s.png'%timeString) },
-					{'url': config['baseURL'] + config['tempMap'], 'output': os.path.join(config['tmpPath'], 'temp-map_%s.png'%timeString) } ]
+					{'url': config['baseURL'] + config['tempMap'], 'output': os.path.join(config['tmpPath'], 'temp-map_%s.png'%timeString) }, 
+					{'url': config['baseURL'] + config['humidityMap'], 'output': os.path.join(config['tmpPath'], 'humidity-map_%s.png'%timeString) },
+					{'url': config['baseURL'] + humidityOverlay, 'output': os.path.join(config['tmpPath'], 'humidity-overlay_%s.png'%timeString) },
+					{'url': config['baseURL'] + config['cloudMap'], 'output': os.path.join(config['tmpPath'], 'cloud-map_%s.png'%timeString) },
+					{'url': config['baseURL'] + humidityOverlay, 'output': os.path.join(config['tmpPath'], 'cloud-overlay_%s.png'%timeString) }
+					 ]
 	
 	
 	print(imagesToGet)
@@ -83,6 +91,31 @@ if __name__ == "__main__":
 	
 	overlayImage.save(destinationImage)
 	webPathToImage = os.path.join(config['webRoot'], dateString,  "temp_%s.png"%timeString )
-	db.set("latestImage", webPathToImage)
+	db.set("latestTemperatureImage", webPathToImage)
+	
+	# Write the humidity image with its overlay
+	humidityImage = Image.open(imagesToGet[3]['output'])
+	if args.show: humidityImage.show()
+	humidityOverlay = Image.open(imagesToGet[4]['output'])
+	if args.show: humidityOverlay.show()
+	overlayImage = Image.alpha_composite(humidityImage, humidityOverlay)
+	if args.show: overlayImage.show()
+	destinationImage = os.path.join(destinationFolder,  "humidity_%s.png"%timeString)
+	overlayImage.save(destinationImage)
+	webPathToImage = os.path.join(config['webRoot'], dateString,  "humidity_%s.png"%timeString )
+	db.set("latestHumidityImage", webPathToImage)
+	
+	# Write the cloud image with its overlay
+	cloudImage = Image.open(imagesToGet[5]['output'])
+	if args.show: humidityImage.show()
+	cloudOverlay = Image.open(imagesToGet[6]['output'])
+	if args.show: humidityOverlay.show()
+	overlayImage = Image.alpha_composite(cloudImage, cloudOverlay)
+	if args.show: overlayImage.show()
+	destinationImage = os.path.join(destinationFolder,  "cloud_%s.png"%timeString)
+	overlayImage.save(destinationImage)
+	webPathToImage = os.path.join(config['webRoot'], dateString,  "cloud_%s.png"%timeString )
+	db.set("latestCloudImage", webPathToImage)
+	
 	db.set("lastUpdate", timeString)
 	
