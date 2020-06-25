@@ -43,7 +43,7 @@ if __name__ == "__main__":
 					{'url': config['baseURL'] + config['humidityMap'], 'output': os.path.join(config['tmpPath'], 'humidity-map_%s.png'%timeString) },
 					{'url': config['baseURL'] + humidityOverlay, 'output': os.path.join(config['tmpPath'], 'humidity-overlay_%s.png'%timeString) },
 					{'url': config['baseURL'] + config['cloudMap'], 'output': os.path.join(config['tmpPath'], 'cloud-map_%s.png'%timeString) },
-					{'url': config['baseURL'] + humidityOverlay, 'output': os.path.join(config['tmpPath'], 'cloud-overlay_%s.png'%timeString) }
+					{'url': config['baseURL'] + cloudOverlay, 'output': os.path.join(config['tmpPath'], 'cloud-overlay_%s.png'%timeString) }
 					 ]
 	
 	
