@@ -7,34 +7,40 @@ import urllib.error
 import urllib.request
 import sys
 import json, datetime
+import HTMLdb
+
 from PIL import Image
 		
 if __name__ == "__main__":
 	
 	parser = argparse.ArgumentParser(description='Opens up a URL for the La Palma Meteo site and doanloads images.')
 	parser.add_argument('--show', action='store_true', help='Show the images in a window on the desktop.')
-	parser.add_argument('-o','--outputpath', type=str, default="", help='Specify and output directory for the images.')
-	parser.add_argument('-w','--workingdir', type=str, default="/tmp/", help='Working directory for temporary files. Defaults to /tmp')
-	parser.add_argument('-d','--date', type=str, default="yesterday", help='Date for the archive YYYYMMDD. Defaults to "yesterday".')
-	
+	parser.add_argument('-c','--config', type=str, default="autometeo.cfg", help='The config file.')
 	args = parser.parse_args()
 	
-	baseURL = "http://lapalma.hdmeteo.com/"
-	user = "meteo-mont-tricias"
-	baseImage = "maskroad.png"
-	tempMap = "temp-pic.php"
-	tempOverlay = "temp-overlay.php?user=%s"%user
-	print("Base URL is:", baseURL) 
+	configFile = open(args.config, 'rt')
+	config = json.loads(configFile.read())
+	print(config)
+
+	db = HTMLdb.HTMLdb()
+	db.filename = config['dbFile']
+	db.load()
+	db.dump()
+
+	tempOverlay = "temp-overlay.php?user=%s"%config['user']
+	print("Base URL is:", config['baseURL']) 
 
 	now = datetime.datetime.now()
 	timeString = now.strftime("%Y%m%d_%H%M")
 	print("Running the fetch at:",timeString)
 
-	imagesToGet = [ {'url': baseURL + baseImage, 'output': args.workingdir + 'base.png' }, 
-	                {'url': baseURL + tempOverlay, 'output': args.workingdir + 'temp-overlay_%s.png'%timeString },
-					{'url': baseURL + tempMap, 'output': args.workingdir + 'temp-map_%s.png'%timeString } ]
+	imagesToGet = [ {'url': config['baseURL'] + config['baseImage'], 'output': os.path.join(config['tmpPath'], 'base.png') }, 
+	                {'url': config['baseURL'] + tempOverlay, 'output': os.path.join(config['tmpPath'],'temp-overlay_%s.png'%timeString) },
+					{'url': config['baseURL'] + config['tempMap'], 'output': os.path.join(config['tmpPath'], 'temp-map_%s.png'%timeString) } ]
 	
 	
+	print(imagesToGet)
+
 	for image in imagesToGet:
 		if os.path.exists(image['output']): 
 			print("skipping...%s"%image['url'])
@@ -68,4 +74,15 @@ if __name__ == "__main__":
 	print(temperatureImage.size, temperatureImage.info)
 	overlayImage = Image.alpha_composite(temperatureImage, temperatureOverlay)
 	if args.show: overlayImage.show(title="overlay")
-	overlayImage.save(os.path.join(args.outputpath, "temp_%s.png"%timeString))
+
+	dateString = timeString[:-5]
+	destinationFolder = os.path.join(config['HTMLPath'], dateString)
+	if not os.path.exists(destinationFolder):
+		os.mkdir(destinationFolder)
+	destinationImage = os.path.join(destinationFolder,  "temp_%s.png"%timeString)
+	
+	overlayImage.save(destinationImage)
+	webPathToImage = os.path.join(config['webRoot'], dateString,  "temp_%s.png"%timeString )
+	db.set("latestImage", webPathToImage)
+	db.set("lastUpdate", timeString)
+	

@@ -12,18 +12,9 @@ from PIL import Image
 if __name__ == "__main__":
 	
 	parser = argparse.ArgumentParser(description='Archives all of the meteo images and makes the animation.')
-	parser.add_argument('-o','--outputpath', type=str, default="", help='This is the folder where the files are currently residing.')
-	parser.add_argument('-w','--workingdir', type=str, default="/tmp/", help='Working directory for temporary files. Defaults to /tmp')
-	parser.add_argument('-d','--date', type=str, default="yesterday", help='Date for the archive YYYYMMDD. Defaults to "yesterday".')
+	parser.add_argument('-c','--config', type=str, default="", help='The config file.')
 	
 	args = parser.parse_args()
-	
-	baseURL = "http://lapalma.hdmeteo.com/"
-	user = "meteo-mont-tricias"
-	baseImage = "maskroad.png"
-	tempMap = "temp-pic.php"
-	tempOverlay = "temp-overlay.php?user=%s"%user
-	print("Base URL is:", baseURL) 
 
 	now = datetime.datetime.now()
 	timeString = now.strftime("%Y%m%d_%H%M")
