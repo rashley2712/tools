@@ -1,85 +1,106 @@
 #!/usr/bin/env python3
 
-import argparse, os, subprocess
-#from HTMLParser import HTMLParser
-#from bs4 import BeautifulSoup
-import urllib.error
-import urllib.request
-import sys
-import json, datetime
-from PIL import Image
-		
+import argparse, os, subprocess, sys, json, datetime, re, shutil
+import HTMLdb
+
 if __name__ == "__main__":
 	
-	parser = argparse.ArgumentParser(description='Archives all of the meteo images and makes the animation.')
+	parser = argparse.ArgumentParser(description='Archives all of the meteo images and updates the database.')
 	parser.add_argument('-c','--config', type=str, default="", help='The config file.')
+	parser.add_argument('-d','--date', type=str, default="yesterday", help='The date to archive. Defaults to yesterday.')
+	parser.add_argument('-f','--find', action="store_true", default=False, help='Find all dates to archive (excluding today).')
 	
 	args = parser.parse_args()
 
-	now = datetime.datetime.now()
-	timeString = now.strftime("%Y%m%d_%H%M")
-	if args.date == 'yesterday':
+	findFolders = False
+
+	configFile = open(args.config, 'rt')
+	config = json.loads(configFile.read())
+	print(config)
+	
+	datesToArchive = []
+	if args.find: 
+		findFolders = True
+		# Get a list of all folders matched the date format
+		currentPath = config['HTMLPath']
+		print("Finding all dates needing archive action in folder", currentPath)
+		folders = [x[0] for x in os.walk(currentPath)]
+		folders = [x.split('/')[-1] for x in folders]
+		dateFolders = []
+		for f in folders:
+			m = re.search('\d{8}', f)
+			if m is not None: dateFolders.append(f)
+		print(dateFolders)
+		now = datetime.datetime.now()
+		todayDate = now.strftime("%Y%m%d")
+		for d in dateFolders:
+			if d!=todayDate: datesToArchive.append(d)
+
+	elif args.date == 'yesterday':
+		now = datetime.datetime.now()
 		yesterday = now - datetime.timedelta(days=1)
-		yesterdayString = yesterday.strftime("%Y%m%d")
+		archiveDate = yesterday.strftime("%Y%m%d")
+		print("No date specified ... going to archive yesterday, which was: :", archiveDate)
+		datesToArchive = [archiveDate]
 	else:
-		yesterdayString = args.date
-	print("Yesterday was:", yesterdayString)
+		archiveDate = args.date
+		datesToArchive = [archiveDate]
 
-	archiveFolder = os.path.join(args.outputpath, yesterdayString)
-	print("Archiving to: %s"%archiveFolder)
-	if not os.path.exists(archiveFolder):
-		os.mkdir(archiveFolder)
-	
-	# Collect all the files belonging to that date in the outputfolder
-	files = os.listdir(args.outputpath)
-	fileCollection = []
-	for f in files:
-		if "temp_%s"%yesterdayString in f:
-			fileCollection.append(f)
 
-	fileCollection = sorted(fileCollection)
-	
-	for f in fileCollection:
-		originalPath = os.path.join(args.outputpath, f)
-		destinationPath = os.path.join(archiveFolder, f)
-		print("Renaming %s to %s"%(originalPath, destinationPath))
-		os.rename(originalPath, destinationPath)
+	for archiveDate in datesToArchive:
+		
+		archiveFolder = os.path.join(config['HTMLPath'], archiveDate)
+		
+		archiveDestinationFolder = os.path.join(config['HTMLPath'], "archive")
+		movieDestinationFolder = os.path.join(config['HTMLPath'], 'animations')
+		if not os.path.exists(archiveDestinationFolder):
+			os.mkdir(archiveDestinationFolder)
+		if not os.path.exists(movieDestinationFolder):
+			os.mkdir(movieDestinationFolder)
 
-	# Regenerate the file list now in the archive folder
-	fileCollection = []
-	files = os.listdir(archiveFolder)
-	for f in files:
-		if "temp_%s"%yesterdayString in f:
-			fileCollection.append(f)
+		# Get all the files in the folder
+		fileCollection = []
+		files = os.listdir(archiveFolder)
+		mp4Files = []
 
-	fileCollection = sorted(fileCollection)
-	listFile = open(os.path.join(archiveFolder, "%s.list"%yesterdayString), 'wt')
-	for f in fileCollection:
-		listFile.write("%s\n"%f)
-	listFile.close()
+		fileTypes = ['temp', 'humidity', 'cloud']
+		
+		for fileType in fileTypes: 
+			matchedFiles = []
+			movieFile = None
+			for f in files:
+				m = re.search('^' + fileType + '_.*\.png$', f)
+				if m is not None: matchedFiles.append(f)
+				m = re.search('_' + fileType + '\.gif$', f)
+				if m is not None: movieFile = f
 
-	user = os.getlogin()
-	ffmpegCommand = ["/home/%s/bin/pipeFFMPEG.bash"%user]
-	ffmpegCommand.append(yesterdayString)
-	print("Running:", ffmpegCommand)
-	from subprocess import Popen, PIPE
-	#output, errors = Popen(archiveFolder, stdout=PIPE, stderr=PIPE).communicate()
-	os.chdir(archiveFolder)
-	subprocess.call(ffmpegCommand)
-	os.rename(os.path.join(archiveFolder, yesterdayString+".mp4"), os.path.join(args.outputpath, yesterdayString + ".mp4"))
+			if len(matchedFiles) == 0: continue
+			matchedFiles = sorted(matchedFiles)
+			tarFilename = archiveDate + "_" + fileType + ".tar.gz"
+			os.chdir(archiveFolder)
+			archiveCommand = ['tar']
+			archiveCommand.append('czf')
+			archiveCommand.append(tarFilename)
+			archiveCommand+=matchedFiles
+			subprocess.call(archiveCommand)
+			print("Archived %d files to %s"%(len(matchedFiles), tarFilename))
 
-	# Now generate an animated gif from the mp4
-	# ffmpeg -i 20200622.mp4 -filter_complex "[0:v] split [a][b];[a] palettegen [p];[b][p] paletteuse" out.gif
+			print("Moving to: ", archiveDestinationFolder)
+			os.rename(tarFilename, os.path.join(archiveDestinationFolder, tarFilename))
 
-	os.chdir(args.outputpath)
-	ffmpegCommand = ['ffmpeg']
-	ffmpegCommand.append('-y')
-	ffmpegCommand.append('-i')
-	ffmpegCommand.append(os.path.join(args.outputpath, yesterdayString + ".mp4"))
-	ffmpegCommand.append('-filter_complex')
-	ffmpegCommand.append('[0:v] split [a][b];[a] palettegen [p];[b][p] paletteuse')
-	ffmpegCommand.append(yesterdayString + '.gif')
-	print(ffmpegCommand)
-	subprocess.call(ffmpegCommand)
-	sys.exit()
+			if movieFile is not None:
+				print("Movie file is", movieFile)
+				print("Moving to: ", movieDestinationFolder)
+				os.rename(movieFile, os.path.join(movieDestinationFolder, movieFile))
 
+		# Clean up and remove the existing folder
+		shutil.rmtree(archiveFolder, ignore_errors=True)
+
+		# Update the JSON db
+		db = HTMLdb.HTMLdb()
+		db.filename = config['dbFile']
+		db.load()
+		db.append('archivedDates', archiveDate)
+		db.removeDuplicates('archivedDates')
+
+		

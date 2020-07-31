@@ -1,4 +1,5 @@
 import json
+
 class HTMLdb:
 	def __init__(self):
 		self.dates = None
@@ -23,3 +24,17 @@ class HTMLdb:
 		self.db[property] = value
 		self.dump()
 
+	def append(self, property, value):
+		if property not in self.db.keys(): self.db[property] = []
+		self.db[property].append(value)
+		sortedList = sorted(self.db[property])
+		self.db[property] = sortedList
+		self.dump()
+
+	def removeDuplicates(self, property):
+		itemArray = self.db[property]
+		dedupedArray = []
+		for item in itemArray:
+			if item not in dedupedArray: dedupedArray.append(item)
+		self.db[property] = dedupedArray
+		self.dump()
