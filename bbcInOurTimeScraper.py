@@ -3,7 +3,7 @@
 import argparse
 from HTMLParser import HTMLParser
 from bs4 import BeautifulSoup
-import urllib2
+import urllib
 import sys
 import json
 

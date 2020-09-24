@@ -1,14 +1,14 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import argparse
 import datetime
 import sys
-import urllib2
+import urllib
 import os
 import json
-from BeautifulSoup import BeautifulSoup
+import requests
 
-class allLinks:
+class podcastMeta:
 	def __init__(self):
 		self.linkArray = []
 		self.filename = "links.json"
@@ -36,70 +36,64 @@ class allLinks:
 		else:
 			print("Duplicate detected: %s - %s"%(link['title'], link['link']))
 
+	def removeSummerRepeats(self):
+		newList = []
+		for meta in self.linkArray:
+			title = meta['title']
+			summer = False
+			if "summer repeat".upper() in title.upper(): summer=True
+			if summer:
+				print(title, "is a summer repeat")
+			else:
+				newList.append(meta)
+		self.linkArray = newList	
+	
+	def updateStatus(self, index):
+		self.linkArray[index]['downloaded'] = True
+		self.save()
 
+	def size(self):
+		return len(self.linkArray)
 
 if __name__ == "__main__":
-	# http://open.live.bbc.co.uk/mediaselector/6/redir/version/2.0/mediaset/audio-nondrm-download-low/proto/http/vpid/p06c9hhm.mp3
-	# http://open.live.bbc.co.uk/mediaselector/6/redir/version/2.0/mediaset/audio-nondrm-download/proto/http/vpid/p06c9hhm.mp3
-	# http://open.live.bbc.co.uk/mediaselector/6/redir/version/2.0/mediaset/audio-nondrm-download/proto/http/vpid/p003k9c1.mp3
-	# http://open.live.bbc.co.uk/mediaselector/6/redir/version/2.0/mediaset/audio-nondrm-download/proto/http/vpid/p05jqtcs.mp3
-	# http://open.live.bbc.co.uk/mediaselector/6/redir/version/2.0/mediaset/audio-nondrm-download/proto/http/vpid/p04m6y80.mp3
-	# http://open.live.bbc.co.uk/mediaselector/6/redir/version/2.0/mediaset/audio-nondrm-download/proto/http/vpid/p02q5c8r.mp3
-	baseURL = "https://www.bbc.co.uk/programmes/b006qykl/episodes/a-z/"
 	homeDIR = os.getenv("HOME")
 	fetch = True
 	
 	parser = argparse.ArgumentParser(description='Downloads all of the In Our Time audio programmes.')
-	parser.add_argument('-g', action='store_true', help='\'Get\' directive. Asks the script to get the crossword.')
+	parser.add_argument('-l', '--list', action='store_true', help='Just list the podcasts.')
 	
-	arg = parser.parse_args()
-	print arg
+	args = parser.parse_args()
 	
-	linkDB = allLinks()
+	linkDB = podcastMeta()
 	linkDB.load()
 	
-	if not arg.g:
-		print "You did not specify the 'get' directive, so not really fetching the programmes."
-		fetch=False
-
-	letters = 'abcdefghijklmnopqrstuvwxyz'
-	# letters = 'bcdefghijkl'
 	
-	for index in range(len(letters)):
-		fullURL = baseURL + letters[index]
-		print "Ready to fetch: ", fullURL
+	if args.list:
+		for l in linkDB.linkArray:
+			print(l['title'], l['downloaded'])
 
-		try:
-			response = urllib2.urlopen(fullURL)
-		except  urllib2.HTTPError as e:
-			print "We got an error of:", e.code
-			sys.exit()
-		except urllib2.URLError as e:
-			print e.reason
-			sys.exit()
 
-		headers = str(response.headers)
-		print(headers)
+	#for index in range(len(linkDB.linkArray)):
+	for index in range(linkDB.size()):	
+		if linkDB.linkArray[index]['downloaded']: continue
+		params = {}
+		url = linkDB.linkArray[index]['link']
+		print(index, " fetching ", linkDB.linkArray[index]['title'], " at ", url)
+		response = requests.get(url, params=params)
+		downloaded_file = response.content
 
-		content = response.read()
-		soup = BeautifulSoup(content)
-
-		links = soup.findAll('a')
-		print("%d links found."%len(links))
-		for l in links:
-			aclass = l.get('class')
-			if aclass == 'box-link__target link--block ':
-				link = l['href']
-				#print("link: " + link)
-				snippet = str(l)
-				first = snippet[snippet.find("gel-pica-bold")+15:]
-				substring = first[:first.find("span")-2]
-				#print(snippet)
-				print(substring, link)
-				linkObject = {'title': substring, 'link': link}
-				linkDB.add(linkObject)
-
-		response.close()
-
-		linkDB.save()
-	print 'Completed successfully'
+		local_filename = linkDB.linkArray[index]['title']
+		local_filename = local_filename.replace(' ', '_')
+		local_filename+=".mp3"
+		totalbits = 0
+		if response.status_code == 200:
+			with open(local_filename, 'wb') as f:
+				chunkSize = 1024000
+				for chunk in response.iter_content(chunk_size = chunkSize):
+					if chunk:
+						totalbits += chunkSize
+						#print("Downloaded",totalbits*1025,"KB...")
+						f.write(chunk)
+			print("written to", local_filename)
+			f.close()
+			linkDB.updateStatus(index)
