@@ -31,12 +31,13 @@ def getDriveListing():
 
 def checkForExistingFile(service, name):
 	print("Searching for a file called:", name)
-	results = service.files().list(q="name = '" + name + "'", spaces="drive", fields="files(id, name, parents)").execute()
+	results = service.files().list(q="name = '" + name + "'", spaces="drive", fields="files(id, name, parents, trashed)").execute()
 	if (len(results.get('files', [])) > 0): 
 		print("file found!")
+		allTrashed = True
 		for f in results.get('files', []):
-			print(f.get('name'), f.get('id'), f.get('parents'))
-		return True
+			print(f.get('name'), f.get('id'), f.get('parents'), f.get('trashed'))
+			if not f.get('trashed'): return True
 	return False
 
 
