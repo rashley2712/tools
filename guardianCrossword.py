@@ -102,7 +102,7 @@ if __name__ == "__main__":
 	crosswordPath = homeDIR + "/Crosswords/"
 	namePrefix = "gdn.quick."
 	nameSuffix = ".pdf"
-	cloudtokenFile = homeDIR + "/bin/crossworduploader.json"
+	cloudtokenFile = homeDIR + "/bin/token.json"
 
 	parser = argparse.ArgumentParser(description='Downloads the Guardian Quick crosswords and saves (and archives) them to a Dropbox folder.')
 	parser.add_argument('--date', default = 'today', type=str, help='Date for the crossword (default: today)')
