@@ -22,7 +22,7 @@ locations = [{
 		"elevation" : 900 
 	}]
 
-locationInfo = locations[2]
+locationInfo = locations[1]
 
 def information(text):
 	print(text)
