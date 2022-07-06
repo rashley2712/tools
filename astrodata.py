@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import ephem
-#from datetime import date, datetime
 import datetime
 
 locations = [{ 
@@ -22,7 +21,7 @@ locations = [{
 		"elevation" : 900 
 	}]
 
-locationInfo = locations[2]
+locationInfo = locations[0]
 
 def information(text):
 	print(text)
